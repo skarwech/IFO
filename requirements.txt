@@ -1,3 +1,4 @@
+# Core dependencies
 numpy>=1.24.0
 pandas>=2.0.0
 scipy>=1.10.0
@@ -11,3 +12,12 @@ python-docx>=0.8.11
 matplotlib>=3.7.0
 pyyaml>=6.0
 opcua>=0.98.13
+
+# API dependencies
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+pydantic>=2.5.0
+pydantic-settings>=2.1.0
+python-multipart>=0.0.6
+websockets>=12.0
+requests>=2.31.0  # For test_api.py

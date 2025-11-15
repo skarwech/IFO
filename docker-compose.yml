@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  api:
+    build: .
+    container_name: ifo-api
+    ports:
+      - "8000:8000"
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8000
+      - RELOAD=true
+    volumes:
+      - ./config.yaml:/app/config.yaml
+      - ./data:/app/data
+      - ./results:/app/results
+    restart: unless-stopped
+    networks:
+      - ifo-network
+
+  # Optional: Redis for caching/session management
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: ifo-redis
+  #   ports:
+  #     - "6379:6379"
+  #   networks:
+  #     - ifo-network
+  #   restart: unless-stopped
+
+networks:
+  ifo-network:
+    driver: bridge
