@@ -1,0 +1,140 @@
+# Configuration for Blominmäki WWTP Intelligent Pump Scheduler
+
+# System Parameters
+system:
+  tunnel:
+    l1_min: 0.0        # meters
+    l1_max: 8.0        # meters
+    l2_fixed: 30.0     # meters (downstream/WWTP level)
+    v_min: 350.0       # m³
+    v_max: 225850.0    # m³
+    emptying_threshold: 0.5  # meters (for daily flushing)
+  
+  pumps:
+    small:
+      count: 4
+      labels: ['1.1', '1.2', '1.3', '1.4']
+      rated_power_kw: 250
+      nominal_rpm: 991
+      nominal_hz: 50
+      impeller_mm: 534
+      # Nominal operating point (at 50Hz)
+      q_nominal_ls: 464    # l/s
+      h_nominal_m: 31.5    # meters
+      eta_nominal: 0.816   # efficiency
+      p2_nominal_kw: 175.6 # shaft power
+      p1_nominal_kw: 188.7 # input power
+    
+    large:
+      count: 4
+      labels: ['2.1', '2.2', '2.3', '2.4']
+      rated_power_kw: 400
+      nominal_rpm: 743
+      nominal_hz: 50
+      impeller_mm: 749
+      # Nominal operating point (at 50Hz)
+      q_nominal_ls: 925    # l/s
+      h_nominal_m: 31.5    # meters
+      eta_nominal: 0.848   # efficiency
+      p2_nominal_kw: 336.6 # shaft power
+      p1_nominal_kw: 358.1 # input power
+
+# Operational Constraints
+constraints:
+  level:
+    min_m: 0.0
+    max_m: 8.0
+    operational_max_m: 7.5
+  
+  pump_frequency:
+    min_hz: 47.5
+    max_hz: 50.0
+    step_hz: 0.5
+  
+  frequency:
+    min_hz: 47.5
+    max_hz: 50.0
+    step_hz: 0.5
+  
+  flow:
+    max_ramp_m3h: 500    # max change in total flow per timestep
+    smoothness_weight: 1.0  # weight for flow variance penalty
+  
+  pumps:
+    min_on_time_hours: 2.0
+    min_off_time_hours: 2.0
+    min_active_pumps: 1
+    balance_hours_daily: true  # equalize runtime across pumps
+  
+  emptying:
+    required_daily: true
+    skip_on_rain: true
+    rain_threshold_m3_15min: 2000  # F1 threshold to skip emptying
+
+# Forecasting Parameters
+forecasting:
+  lstm:
+    input_hours: 24
+    output_hours: 24
+    hidden_size: 64
+    num_layers: 2
+    dropout: 0.2
+    learning_rate: 0.001
+    batch_size: 32
+    epochs: 100
+  
+  features:
+    - hour_of_day
+    - day_of_week
+    - is_weekend
+    - rolling_mean_6h
+    - rolling_std_6h
+
+# MPC Parameters
+mpc:
+  horizon_hours: 24
+  timestep_minutes: 15
+  update_interval_minutes: 15
+  
+  objective_weights:
+    energy_cost: 1.0
+    flow_smoothness: 0.5
+    efficiency_penalty: 0.3
+    emptying_reward: -10.0  # negative = reward
+
+# Simulation
+simulation:
+  timestep_minutes: 15
+  timestep_hours: 0.25  # 15 minutes = 0.25 hours
+  data_file: "data/Hackathon_HSY_data.xlsx"
+  volume_table_file: "data/Volume of tunnel vs level Blominmäki.xlsx"
+  
+# Dashboard
+dashboard:
+  host: "127.0.0.1"
+  port: 8050
+  update_interval_seconds: 5
+  plot_history_hours: 48
+
+# Multi-Agent Architecture
+agents:
+  price_forecaster:
+    enabled: true
+    type: "statistical"  # or "ml"
+  
+  inflow_forecaster:
+    enabled: true
+    type: "lstm"
+  
+  storage_manager:
+    enabled: true
+    lookahead_hours: 6
+  
+  pump_optimizer:
+    enabled: true
+    solver: "PULP_CBC_CMD"
+    time_limit_seconds: 30
+  
+  coordinator:
+    enabled: true
+    coordination_strategy: "hierarchical"  # or "collaborative"

@@ -1,0 +1,11 @@
+{
+  "total_cost_eur": 3537.397500000001,
+  "total_energy_kwh": 10525.200000000003,
+  "avg_power_kw": 443.1663157894738,
+  "peak_power_kw": 481.6,
+  "night_cost_eur": 773.5175000000002,
+  "day_cost_eur": 2532.4880000000003,
+  "evening_cost_eur": 231.392,
+  "num_steps": 95,
+  "duration_hours": 23.75
+}
