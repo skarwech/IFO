@@ -62,3 +62,4 @@ desktop.ini
 *.tmp
 *.bak
 *.cache
+.env
