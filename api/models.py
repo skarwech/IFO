@@ -1,6 +1,7 @@
 """
 Pydantic models for API request/response validation.
 """
+from __future__ import annotations
 
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
@@ -63,6 +64,27 @@ class OptimizationRequest(BaseModel):
     constraints: Optional[Dict[str, Any]] = Field(None, description="Custom constraints")
 
 
+class FileUploadConfig(BaseModel):
+    """Configuration for file upload and data processing."""
+    skip_rows: Optional[List[int]] = Field(default=None, description="Row indices to skip (0-based)")
+    drop_columns: Optional[List[str]] = Field(default=None, description="Column names to drop")
+    inflow_column: str = Field(default="Inflow to tunnel F1", description="Column name for inflow data")
+    timestamp_column: Optional[str] = Field(default="Time stamp", description="Column name for timestamps")
+    use_for: str = Field(default="both", pattern="^(forecast|optimize|both)$", description="What to use data for")
+
+
+class FileUploadResponse(BaseModel):
+    """Response after file upload and processing."""
+    status: str
+    rows_processed: int
+    columns_found: List[str]
+    data_preview: List[Dict[str, Any]] = Field(description="First 5 rows of processed data")
+    forecast_result: Optional[ForecastData] = None
+    optimization_result: Optional["OptimizationResult"] = None
+    execution_result: Optional[Dict[str, Any]] = Field(None, description="Execution results (frequencies applied, flow, power)")
+    message: str
+
+
 class OptimizationResult(BaseModel):
     """Optimization results."""
     schedule: List[List[float]] = Field(..., description="Pump frequencies [timesteps x pumps]")
@@ -113,6 +135,32 @@ class LiveUpdate(BaseModel):
     total_power: float
     event_type: str = Field(default="status_update", pattern="^(status_update|alert|optimization_complete)$")
     message: Optional[str] = None
+
+
+class EdgeMetricsPayload(BaseModel):
+    """Payload for edge device metrics reporting."""
+    model_config = {"protected_namespaces": ()}
+    metrics: Dict[str, Any]
+    timestamp: datetime = Field(default_factory=datetime.now)
+
+
+class ChatMessage(BaseModel):
+    """Chat message for conversation history."""
+    role: str = Field(..., pattern="^(user|assistant)$")
+    content: str
+    timestamp: datetime = Field(default_factory=datetime.now)
+
+
+class ChatRequest(BaseModel):
+    """Request for chatbot conversation."""
+    message: str = Field(..., min_length=1, max_length=2000, description="User message")
+    include_system_status: bool = Field(default=True, description="Include current system status in context")
+
+
+class ChatResponse(BaseModel):
+    """Response from chatbot."""
+    response: str
+    timestamp: datetime = Field(default_factory=datetime.now)
 
 
 class ErrorResponse(BaseModel):

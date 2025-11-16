@@ -1,14 +1,17 @@
 """
 WebSocket connection manager for live updates.
+Supports both legacy LiveUpdate format and new frontend LiveSystemUpdate format.
 """
 
 import asyncio
 import json
-from typing import List, Set
+from typing import List, Set, Optional, TYPE_CHECKING
 from datetime import datetime
 from fastapi import WebSocket, WebSocketDisconnect
 from api.models import LiveUpdate
-from api.services import get_ifo_service
+
+if TYPE_CHECKING:
+    from api.services import IFOService
 
 
 class ConnectionManager:
@@ -17,6 +20,11 @@ class ConnectionManager:
     def __init__(self):
         self.active_connections: Set[WebSocket] = set()
         self.broadcast_task = None
+        self.ifo_service: Optional['IFOService'] = None
+    
+    def set_service(self, service: 'IFOService'):
+        """Set the IFO service instance."""
+        self.ifo_service = service
     
     async def connect(self, websocket: WebSocket):
         """Accept new WebSocket connection."""
@@ -53,15 +61,13 @@ class ConnectionManager:
     
     async def broadcast_status_updates(self, interval: int = 2):
         """Continuously broadcast system status updates."""
-        ifo_service = get_ifo_service()
-        
         while True:
             try:
-                if self.active_connections:
+                if self.active_connections and self.ifo_service:
                     # Get current status
-                    status = ifo_service.get_system_status()
+                    status = self.ifo_service.get_system_status()
                     
-                    # Create live update message
+                    # Create live update message (legacy format)
                     update = LiveUpdate(
                         timestamp=datetime.now(),
                         pumps=status.pumps,
@@ -71,7 +77,20 @@ class ConnectionManager:
                     )
                     
                     # Broadcast to all clients
-                    await self.broadcast(update.model_dump(mode='json'))
+                    message = update.model_dump(mode='json')
+                    
+                    # Add frontend-specific fields
+                    message['type'] = 'system_update'
+                    message['dashboard'] = {
+                        'currentPower': status.total_power,
+                        'tunnelLevel': status.tunnel.level,
+                        'tunnelVolume': status.tunnel.volume,
+                        'inflowRate': status.tunnel.inflow_rate,
+                        'outflowRate': status.tunnel.outflow_rate,
+                        'activePumps': sum(1 for p in status.pumps if p.is_running),
+                    }
+                    
+                    await self.broadcast(message)
                 
                 # Wait before next update
                 await asyncio.sleep(interval)

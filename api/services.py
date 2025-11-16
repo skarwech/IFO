@@ -61,6 +61,9 @@ class IFOService:
         self.last_update = datetime.now()
         self.optimization_active = False
         self.last_optimization_time = None
+        # Edge device last metrics/heartbeat
+        self.last_edge_metrics: Dict[str, Any] = {}
+        self.last_edge_heartbeat: Optional[datetime] = None
         
     def _load_config(self) -> Dict[str, Any]:
         """Load configuration from YAML."""
@@ -264,6 +267,18 @@ class IFOService:
         """Update pump operating frequencies."""
         self.current_frequencies = np.array(frequencies)
         self.last_update = datetime.now()
+
+    def update_edge_metrics(self, metrics: Dict[str, Any]):
+        """Store last seen edge device metrics and heartbeat."""
+        self.last_edge_metrics = metrics or {}
+        self.last_edge_heartbeat = datetime.now()
+
+    def get_edge_metrics(self) -> Dict[str, Any]:
+        """Return last edge metrics with timestamp if available."""
+        return {
+            "metrics": self.last_edge_metrics,
+            "heartbeat": self.last_edge_heartbeat.isoformat() if self.last_edge_heartbeat else None,
+        }
 
 
 # Singleton service instance
