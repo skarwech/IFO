@@ -38,6 +38,7 @@ venv/
 env/
 ENV/
 .venv
+.env
 
 # Jupyter Notebooks
 .ipynb_checkpoints
@@ -62,4 +63,3 @@ desktop.ini
 *.tmp
 *.bak
 *.cache
-.env
